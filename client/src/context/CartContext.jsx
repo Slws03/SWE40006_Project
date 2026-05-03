@@ -3,6 +3,7 @@ import { cartReducer, initialCartState } from './cartReducer';
 
 const STORAGE_KEY = 'dollar_shop_cart';
 
+// Not exported — consume via useCart() hook only
 export const CartContext = createContext(null);
 
 export function CartProvider({ children }) {
@@ -10,7 +11,9 @@ export function CartProvider({ children }) {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) return { ...init, items: JSON.parse(saved) };
-    } catch {}
+    } catch {
+      // Corrupted localStorage — fall back to empty cart
+    }
     return init;
   });
 
@@ -25,7 +28,6 @@ export function CartProvider({ children }) {
       });
       if (!res.ok) return;
       const { items } = await res.json();
-      // Convert server format to client format
       const serverItems = items.map(i => ({
         productId: i.productId,
         name: i.name,
@@ -34,7 +36,6 @@ export function CartProvider({ children }) {
         quantity: i.quantity
       }));
 
-      // Merge: local-only items get pushed to server, server wins on conflicts
       const localItems = state.items;
       const serverIds = new Set(serverItems.map(i => i.productId));
       const localOnly = localItems.filter(i => !serverIds.has(i.productId));
@@ -50,9 +51,10 @@ export function CartProvider({ children }) {
         });
       }
 
-      const merged = [...serverItems, ...localOnly];
-      dispatch({ type: 'LOAD_CART', items: merged });
-    } catch {}
+      dispatch({ type: 'LOAD_CART', items: [...serverItems, ...localOnly] });
+    } catch {
+      // Network error — keep local cart as-is
+    }
   }, [state.items]);
 
   return (
