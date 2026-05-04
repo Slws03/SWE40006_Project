@@ -47,20 +47,36 @@ export default function ProductListPage() {
 
   return (
     <div className="max-w-6xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">All Products</h1>
+      <div className="flex items-end justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-800">All Products</h1>
+          {!loading && (
+            <p className="text-sm text-gray-500 mt-1">
+              {products.length} item{products.length !== 1 ? 's' : ''}
+              {category ? ` in ${category}` : ''}
+              {search ? ` matching "${search}"` : ''}
+            </p>
+          )}
+        </div>
+      </div>
 
       {/* Search */}
-      <form onSubmit={handleSearch} className="flex gap-2 mb-6">
-        <input
-          type="text"
-          value={searchInput}
-          onChange={e => setSearchInput(e.target.value)}
-          placeholder="Search products..."
-          className="flex-1 border border-gray-300 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500"
-        />
+      <form onSubmit={handleSearch} className="flex gap-2 mb-5">
+        <div className="relative flex-1">
+          <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          </svg>
+          <input
+            type="text"
+            value={searchInput}
+            onChange={e => setSearchInput(e.target.value)}
+            placeholder="Search products..."
+            className="w-full border border-gray-300 rounded-xl pl-10 pr-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-white"
+          />
+        </div>
         <button
           type="submit"
-          className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-lg text-sm font-medium transition-colors"
+          className="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl text-sm font-semibold transition-colors"
         >
           Search
         </button>
@@ -68,7 +84,7 @@ export default function ProductListPage() {
           <button
             type="button"
             onClick={() => { setSearchInput(''); setSearchParams({}); }}
-            className="border border-gray-300 hover:bg-gray-50 px-4 py-2.5 rounded-lg text-sm text-gray-600 transition-colors"
+            className="border border-gray-300 hover:bg-gray-50 px-4 py-2.5 rounded-xl text-sm text-gray-600 transition-colors"
           >
             Clear
           </button>
@@ -76,10 +92,10 @@ export default function ProductListPage() {
       </form>
 
       {/* Category filter */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-2 mb-8">
         <button
           onClick={() => setCategory('')}
-          className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${!category ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${!category ? 'bg-green-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-green-400 hover:text-green-700'}`}
         >
           All
         </button>
@@ -87,18 +103,12 @@ export default function ProductListPage() {
           <button
             key={cat}
             onClick={() => setCategory(cat)}
-            className={`px-4 py-1.5 rounded-full text-sm font-medium transition-colors ${category === cat ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+            className={`px-4 py-1.5 rounded-full text-sm font-semibold transition-colors ${category === cat ? 'bg-green-600 text-white shadow-sm' : 'bg-white border border-gray-200 text-gray-600 hover:border-green-400 hover:text-green-700'}`}
           >
             {cat}
           </button>
         ))}
       </div>
-
-      {search && (
-        <p className="text-sm text-gray-500 mb-4">
-          Showing results for "<strong>{search}</strong>" — {products.length} items
-        </p>
-      )}
 
       <ProductGrid products={products} loading={loading} />
     </div>

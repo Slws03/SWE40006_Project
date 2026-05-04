@@ -13,27 +13,27 @@ export default function ProductCard({ product }) {
   }
 
   return (
-    <Link to={`/products/${product.id}`} className="group block bg-white rounded-xl shadow hover:shadow-lg transition-shadow overflow-hidden border border-gray-100">
+    <Link to={`/products/${product.id}`} className="group block bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-100 hover:border-green-200 hover:-translate-y-0.5">
       <div className="aspect-square overflow-hidden bg-gray-50">
         <img
           src={product.image_url}
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => { e.target.src = `https://placehold.co/300x300/e5e7eb/6b7280?text=${encodeURIComponent(product.name)}`; }}
+          onError={(e) => { e.target.src = `https://placehold.co/300x300/dcfce7/166534?text=${encodeURIComponent(product.name)}`; }}
         />
       </div>
       <div className="p-4">
-        <span className="text-xs text-green-600 font-semibold uppercase tracking-wide">{product.category}</span>
-        <h3 className="font-semibold text-gray-800 mt-1 leading-tight group-hover:text-green-700 transition-colors">
+        <span className="text-xs text-green-600 font-semibold uppercase tracking-wider">{product.category}</span>
+        <h3 className="font-semibold text-gray-800 mt-1 mb-3 leading-tight group-hover:text-green-700 transition-colors min-h-[2.5rem] line-clamp-2">
           {product.name}
         </h3>
-        <div className="flex items-center justify-between mt-3">
+        <div className="flex items-center justify-between">
           <span className="text-xl font-bold text-green-700">$1.00</span>
           <button
             onClick={handleAddToCart}
-            className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1.5 rounded-lg transition-colors font-medium"
+            className="text-xs bg-green-600 hover:bg-green-700 active:scale-95 text-white px-3 py-1.5 rounded-lg transition-all font-semibold"
           >
-            Add to Cart
+            + Cart
           </button>
         </div>
       </div>
