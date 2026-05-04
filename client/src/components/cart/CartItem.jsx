@@ -24,7 +24,7 @@ export default function CartItem({ item }) {
       />
       <div className="flex-1 min-w-0">
         <p className="font-medium text-gray-800 truncate">{item.name}</p>
-        <p className="text-sm text-green-600 font-semibold">${item.price.toFixed(2)} each</p>
+        <p className="text-sm text-green-600 font-semibold">${Number(item.price).toFixed(2)} each</p>
       </div>
       <div className="flex items-center gap-2">
         <button
@@ -38,7 +38,7 @@ export default function CartItem({ item }) {
         >+</button>
       </div>
       <div className="text-right min-w-[60px]">
-        <p className="font-bold text-gray-800">${(item.price * item.quantity).toFixed(2)}</p>
+        <p className="font-bold text-gray-800">${(Number(item.price) * item.quantity).toFixed(2)}</p>
         <button onClick={remove} className="text-xs text-red-500 hover:text-red-700 transition-colors mt-1">
           Remove
         </button>

@@ -1,39 +1,54 @@
-const db = require('../database/db');
+const pool = require('../database/db');
 
-function getProducts(req, res) {
-  const { category, search, page = 1, limit = 20 } = req.query;
-  let query = 'SELECT * FROM products WHERE 1=1';
-  const params = [];
+async function getProducts(req, res, next) {
+  try {
+    const { category, search, page = 1, limit = 20 } = req.query;
+    let query = 'SELECT * FROM products WHERE 1=1';
+    const params = [];
+    let idx = 1;
 
-  if (category) {
-    query += ' AND category = ?';
-    params.push(category);
+    if (category) {
+      query += ` AND category = $${idx++}`;
+      params.push(category);
+    }
+    if (search) {
+      query += ` AND (name ILIKE $${idx} OR description ILIKE $${idx + 1})`;
+      params.push(`%${search}%`, `%${search}%`);
+      idx += 2;
+    }
+
+    const countQuery = query.replace('SELECT *', 'SELECT COUNT(*) as total');
+    const { rows: countRows } = await pool.query(countQuery, params);
+    const total = Number(countRows[0].total);
+
+    const offset = (Number(page) - 1) * Number(limit);
+    query += ` ORDER BY category, name LIMIT $${idx} OFFSET $${idx + 1}`;
+    params.push(Number(limit), offset);
+
+    const { rows: products } = await pool.query(query, params);
+    res.json({ products: products.map(p => ({ ...p, price: Number(p.price) })), total, page: Number(page), limit: Number(limit) });
+  } catch (err) {
+    next(err);
   }
-  if (search) {
-    query += ' AND (name LIKE ? OR description LIKE ?)';
-    params.push(`%${search}%`, `%${search}%`);
-  }
-
-  const countResult = db.prepare(query.replace('SELECT *', 'SELECT COUNT(*) as total')).get(...params);
-  const total = countResult.total;
-
-  const offset = (Number(page) - 1) * Number(limit);
-  query += ' ORDER BY category, name LIMIT ? OFFSET ?';
-  params.push(Number(limit), offset);
-
-  const products = db.prepare(query).all(...params);
-  res.json({ products, total, page: Number(page), limit: Number(limit) });
 }
 
-function getProduct(req, res) {
-  const product = db.prepare('SELECT * FROM products WHERE id = ?').get(req.params.id);
-  if (!product) return res.status(404).json({ error: 'Product not found', code: 'NOT_FOUND' });
-  res.json({ product });
+async function getProduct(req, res, next) {
+  try {
+    const { rows } = await pool.query('SELECT * FROM products WHERE id = $1', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Product not found', code: 'NOT_FOUND' });
+    res.json({ product: { ...rows[0], price: Number(rows[0].price) } });
+  } catch (err) {
+    next(err);
+  }
 }
 
-function getCategories(req, res) {
-  const rows = db.prepare('SELECT DISTINCT category FROM products ORDER BY category').all();
-  res.json({ categories: rows.map(r => r.category) });
+async function getCategories(req, res, next) {
+  try {
+    const { rows } = await pool.query('SELECT DISTINCT category FROM products ORDER BY category');
+    res.json({ categories: rows.map(r => r.category) });
+  } catch (err) {
+    next(err);
+  }
 }
 
 module.exports = { getProducts, getProduct, getCategories };

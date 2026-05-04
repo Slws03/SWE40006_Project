@@ -10,7 +10,10 @@ export function CartProvider({ children }) {
   const [state, dispatch] = useReducer(cartReducer, initialCartState, (init) => {
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) return { ...init, items: JSON.parse(saved) };
+      if (saved) {
+        const items = JSON.parse(saved);
+        return { ...init, items: items.map(i => ({ ...i, price: Number(i.price) })) };
+      }
     } catch {
       // Corrupted localStorage — fall back to empty cart
     }
