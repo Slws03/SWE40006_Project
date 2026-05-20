@@ -1,6 +1,7 @@
 import { supabase } from '../supabase';
 
 export const productsApi = {
+
   getAll: async (params = {}) => {
     let query = supabase
       .from('products')
@@ -17,7 +18,8 @@ export const productsApi = {
     const { data, error } = await query;
 
     return {
-      data: data || [],
+      products: data || [],
+      categories: [...new Set((data || []).map(item => item.category))],
       error
     };
   },
@@ -29,7 +31,10 @@ export const productsApi = {
       .eq('id', id)
       .single();
 
-    return { data, error };
+    return {
+      product: data,
+      error
+    };
   },
 
   getCategories: async () => {
@@ -37,17 +42,10 @@ export const productsApi = {
       .from('products')
       .select('category');
 
-    if (error) {
-      return { data: [], error };
-    }
-
-    const categories = [
-      ...new Set(data.map(item => item.category))
-    ];
-
     return {
-      data: categories,
-      error: null
+      categories: [...new Set((data || []).map(item => item.category))],
+      error
     };
   }
+
 };
