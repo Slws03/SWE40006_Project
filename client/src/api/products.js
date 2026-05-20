@@ -1,19 +1,32 @@
-import { supabase } from "../supabase";
+import { supabase } from '../supabase';
 
 export const productsApi = {
-  getAll: async () => {
-    const { data, error } = await supabase
-      .from("products")
-      .select("*");
+  getAll: async (params = {}) => {
+    let query = supabase
+      .from('products')
+      .select('*');
 
-    return { data, error };
+    if (params.category && params.category !== 'All') {
+      query = query.eq('category', params.category);
+    }
+
+    if (params.search) {
+      query = query.ilike('name', `%${params.search}%`);
+    }
+
+    const { data, error } = await query;
+
+    return {
+      data: data || [],
+      error
+    };
   },
 
   getById: async (id) => {
     const { data, error } = await supabase
-      .from("products")
-      .select("*")
-      .eq("id", id)
+      .from('products')
+      .select('*')
+      .eq('id', id)
       .single();
 
     return { data, error };
@@ -21,15 +34,20 @@ export const productsApi = {
 
   getCategories: async () => {
     const { data, error } = await supabase
-      .from("products")
-      .select("category");
+      .from('products')
+      .select('category');
 
     if (error) {
       return { data: [], error };
     }
 
-    const categories = [...new Set(data.map(item => item.category))];
+    const categories = [
+      ...new Set(data.map(item => item.category))
+    ];
 
-    return { data: categories, error: null };
+    return {
+      data: categories,
+      error: null
+    };
   }
 };
