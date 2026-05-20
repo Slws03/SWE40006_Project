@@ -1,0 +1,71 @@
+name: Deploy Pipeline
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy-dev:
+    runs-on: ubuntu-latest
+    environment: development
+    steps:
+      - name: Deploy to Development
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_DEV }}
+
+      - name: Wait for Dev Deploy
+        run: sleep 45
+
+      - name: Health Check Dev
+        run: |
+          curl --fail ${{ secrets.RENDER_DEV_URL }}/api/health || exit 1
+
+  deploy-staging:
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy to Staging
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_STAGING }}
+
+      - name: Wait for Staging Deploy
+        run: sleep 45
+
+      - name: Health Check Staging
+        run: |
+          curl --fail ${{ secrets.RENDER_STAGING_URL }}/api/health || exit 1
+
+  deploy-production:
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy Backend to Production
+        run: curl -X POST ${{ secrets.RENDER_DEPLOY_HOOK_PROD }}
+
+      - name: Deploy Frontend to Vercel
+        uses: amondnet/vercel-action@v25
+        with:
+          vercel-token: ${{ secrets.VERCEL_TOKEN }}
+          vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+          vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+          vercel-args: '--prod'
+
+      - name: Send Deployment Marker to Datadog
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+          -H "DD-API-KEY: ${{ secrets.DD_API_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{
+            "title": "Production Deployment",
+            "text": "Commit ${{ github.sha }} deployed to production",
+            "tags": ["env:production","service:dollarstore-api"],
+            "alert_type": "info"
+          }'
+
+      - name: Notify Discord
+        run: |
+          curl -X POST ${{ secrets.DISCORD_WEBHOOK }} \
+          -H "Content-Type: application/json" \
+          -d '{"content":"Production deployed — commit ${{ github.sha }}"}'

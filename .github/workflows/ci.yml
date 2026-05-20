@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+    branches: [main, staging, develop]
+  pull_request:
+    branches: [main, staging]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install Server Dependencies
+        run: cd server && npm ci
+
+      - name: Run Server Tests
+        run: cd server && npx vitest run --coverage
+        env:
+          NODE_ENV: test
+          JWT_SECRET: test_secret_key
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          SUPABASE_SERVICE_KEY: ${{ secrets.SUPABASE_SERVICE_KEY_TEST }}
+
+      - name: Upload Coverage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: server/coverage/
+
+      - name: Install Client Dependencies
+        run: cd client && npm ci
+
+      - name: Lint Client
+        run: cd client && npm run lint
+
+      - name: Run Client Tests
+        run: cd client && npx vitest run
+        env:
+          VITE_API_URL: http://localhost:5000
+          VITE_SUPABASE_URL: ${{ secrets.SUPABASE_URL_TEST }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY_TEST }}
