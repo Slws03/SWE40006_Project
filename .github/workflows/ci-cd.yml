@@ -1,0 +1,93 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ─── CI ───────────────────────────────────────────────────────────────────
+  ci:
+    name: Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            server/package-lock.json
+            client/package-lock.json
+
+      # Server
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Run server tests
+        working-directory: server
+        run: npm test
+        env:
+          NODE_ENV: test
+          JWT_SECRET: ci_test_secret
+          DATABASE_URL: ${{ secrets.DEV_DATABASE_URL }}
+
+      # Client
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build client
+        working-directory: client
+        run: npm run build
+
+      - name: Run client tests
+        working-directory: client
+        run: npx vitest run
+
+  # ─── Deploy: Development (auto) ───────────────────────────────────────────
+  deploy-dev:
+    name: Deploy → Development
+    needs: ci
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    environment: development
+
+    steps:
+      - name: Trigger Render deploy (dev)
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+
+      - name: Trigger Vercel deploy (dev)
+        run: curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+
+  # ─── Deploy: Staging (manual approve) ────────────────────────────────────
+  deploy-staging:
+    name: Deploy → Staging
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: staging
+
+    steps:
+      - name: Trigger Render deploy (staging)
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+
+      - name: Trigger Vercel deploy (staging)
+        run: curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
+
+  # ─── Deploy: Production (manual approve) ─────────────────────────────────
+  deploy-prod:
+    name: Deploy → Production
+    needs: deploy-staging
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Trigger Render deploy (production)
+        run: curl -fsS -X POST "${{ secrets.RENDER_DEPLOY_HOOK }}"
+
+      - name: Trigger Vercel deploy (production)
+        run: curl -fsS -X POST "${{ secrets.VERCEL_DEPLOY_HOOK }}"
