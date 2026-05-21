@@ -1,5 +1,6 @@
 import { createContext, useReducer, useEffect, useCallback } from 'react';
 import { cartReducer, initialCartState } from './cartReducer';
+import { cartApi } from '../api/cart';
 
 const STORAGE_KEY = 'dollar_shop_cart';
 
@@ -24,13 +25,9 @@ export function CartProvider({ children }) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state.items));
   }, [state.items]);
 
-  const syncWithServer = useCallback(async (token) => {
+  const syncWithServer = useCallback(async () => {
     try {
-      const res = await fetch('/api/cart', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      if (!res.ok) return;
-      const { items } = await res.json();
+      const { items } = await cartApi.get();
       const serverItems = items.map(i => ({
         productId: i.productId,
         name: i.name,
@@ -44,14 +41,7 @@ export function CartProvider({ children }) {
       const localOnly = localItems.filter(i => !serverIds.has(i.productId));
 
       for (const item of localOnly) {
-        await fetch('/api/cart', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${token}`
-          },
-          body: JSON.stringify({ productId: item.productId, quantity: item.quantity })
-        });
+        await cartApi.add(item.productId, item.quantity);
       }
 
       dispatch({ type: 'LOAD_CART', items: [...serverItems, ...localOnly] });

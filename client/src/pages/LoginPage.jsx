@@ -33,7 +33,7 @@ export default function LoginPage() {
     try {
       const { token, user } = await authApi.login(form);
       login(token, user);
-      await syncWithServer(token);
+      await syncWithServer();
       addToast(`Welcome back, ${user.name}!`);
       navigate(from, { replace: true });
     } catch (err) {

@@ -1,9 +1,11 @@
+const BASE_URL = import.meta.env.VITE_API_URL ?? '';
+
 async function request(url, options = {}) {
   const token = localStorage.getItem('dollar_shop_token');
   const headers = { 'Content-Type': 'application/json', ...options.headers };
   if (token) headers['Authorization'] = `Bearer ${token}`;
 
-  const res = await fetch(url, { ...options, headers });
+  const res = await fetch(`${BASE_URL}${url}`, { ...options, headers });
   const data = await res.json();
 
   if (!res.ok) {
