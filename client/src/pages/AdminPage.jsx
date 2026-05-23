@@ -1,9 +1,12 @@
-import { useState, useEffect } from 'react';
-import { createProduct, getAllOrders } from '../api/admin';
+import { useState, useEffect, Fragment } from 'react';
+import { createProduct, updateProduct, getAllOrders, deleteProduct } from '../api/admin';
+import { productsApi } from '../api/products';
 import { useToast } from '../components/ui/Toast';
 import Spinner from '../components/ui/Spinner';
+import ProductImage from '../components/ui/ProductImage';
 
-const TABS = ['Add Product', 'All Orders'];
+const TABS = ['Add Product', 'Products', 'All Orders'];
+const CATEGORIES = ['Snacks', 'Stationery', 'Toys', 'Cleaning', 'Beauty', 'Others'];
 
 const STATUS_COLORS = {
   pending: 'bg-yellow-100 text-yellow-800',
@@ -36,13 +39,15 @@ export default function AdminPage() {
         ))}
       </div>
 
-      {tab === 'Add Product' ? <AddProductTab /> : <AllOrdersTab />}
+      {tab === 'Add Product' && <AddProductTab />}
+      {tab === 'Products' && <ProductsTab />}
+      {tab === 'All Orders' && <AllOrdersTab />}
     </div>
   );
 }
 
 function AddProductTab() {
-  const { addToast } = useToast();
+  const addToast = useToast();
   const [form, setForm] = useState({ name: '', description: '', category: '', stock: '100' });
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
@@ -115,13 +120,15 @@ function AddProductTab() {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">Category *</label>
-        <input
+        <select
           name="category"
           value={form.category}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
-          placeholder="e.g. Snacks"
-        />
+          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+        >
+          <option value="">Select category...</option>
+          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+        </select>
       </div>
 
       <div>
@@ -162,6 +169,183 @@ function AddProductTab() {
   );
 }
 
+function ProductsTab() {
+  const addToast = useToast();
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [deleting, setDeleting] = useState(null);
+  const [editing, setEditing] = useState(null);
+  const [editForm, setEditForm] = useState({});
+  const [editImage, setEditImage] = useState(null);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    productsApi.getAll({ limit: 200 })
+      .then(data => setProducts(data.products))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  function startEdit(p) {
+    setEditing(p.id);
+    setEditForm({ name: p.name, description: p.description || '', category: p.category, stock: p.stock });
+    setEditImage(null);
+  }
+
+  function cancelEdit() {
+    setEditing(null);
+    setEditImage(null);
+  }
+
+  async function handleSave(id) {
+    setSaving(true);
+    try {
+      const fd = new FormData();
+      fd.append('name', editForm.name);
+      fd.append('description', editForm.description);
+      fd.append('category', editForm.category);
+      fd.append('stock', editForm.stock);
+      if (editImage) fd.append('image', editImage);
+
+      const { product } = await updateProduct(id, fd);
+      setProducts(prev => prev.map(p => p.id === id ? { ...p, ...product } : p));
+      setEditing(null);
+      addToast('Product updated', 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to update', 'error');
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(id) {
+    if (!confirm('Delete this product?')) return;
+    setDeleting(id);
+    try {
+      await deleteProduct(id);
+      setProducts(prev => prev.filter(p => p.id !== id));
+      addToast('Product deleted', 'success');
+    } catch (err) {
+      addToast(err.message || 'Failed to delete', 'error');
+    } finally {
+      setDeleting(null);
+    }
+  }
+
+  if (loading) return <div className="flex justify-center py-12"><Spinner /></div>;
+  if (!products.length) return <p className="text-gray-500">No products.</p>;
+
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="text-left border-b text-gray-500 text-xs uppercase">
+            <th className="pb-2 pr-4">Image</th>
+            <th className="pb-2 pr-4">Name</th>
+            <th className="pb-2 pr-4">Category</th>
+            <th className="pb-2 pr-4">Stock</th>
+            <th className="pb-2"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {products.map(p => (
+            <Fragment key={p.id}>
+              <tr className="border-b hover:bg-gray-50">
+                <td className="py-3 pr-4">
+                  <ProductImage
+                    name={p.name}
+                    imageUrl={p.image_url}
+                    className="h-10 w-10 object-cover rounded"
+                    textSize="text-xs"
+                  />
+                </td>
+                <td className="py-3 pr-4 font-medium">{p.name}</td>
+                <td className="py-3 pr-4 text-gray-500">{p.category}</td>
+                <td className="py-3 pr-4 text-gray-500">{p.stock}</td>
+                <td className="py-3 flex gap-3">
+                  <button
+                    onClick={() => editing === p.id ? cancelEdit() : startEdit(p)}
+                    className="text-orange-500 hover:text-orange-700 text-xs font-medium"
+                  >
+                    {editing === p.id ? 'Cancel' : 'Edit'}
+                  </button>
+                  <button
+                    onClick={() => handleDelete(p.id)}
+                    disabled={deleting === p.id}
+                    className="text-red-500 hover:text-red-700 text-xs font-medium disabled:opacity-50"
+                  >
+                    {deleting === p.id ? 'Deleting...' : 'Delete'}
+                  </button>
+                </td>
+              </tr>
+              {editing === p.id && (
+                <tr className="bg-orange-50">
+                  <td colSpan={5} className="px-4 py-4">
+                    <div className="grid grid-cols-2 gap-3 max-w-lg">
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Name</label>
+                        <input
+                          value={editForm.name}
+                          onChange={e => setEditForm(f => ({ ...f, name: e.target.value }))}
+                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Category</label>
+                        <select
+                          value={editForm.category}
+                          onChange={e => setEditForm(f => ({ ...f, category: e.target.value }))}
+                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 bg-white"
+                        >
+                          {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Stock</label>
+                        <input
+                          type="number"
+                          min="0"
+                          value={editForm.stock}
+                          onChange={e => setEditForm(f => ({ ...f, stock: e.target.value }))}
+                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-medium text-gray-600 mb-1">New Image (optional)</label>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={e => setEditImage(e.target.files[0])}
+                          className="w-full text-xs text-gray-500 file:mr-2 file:py-1 file:px-3 file:rounded file:border-0 file:text-xs file:bg-orange-50 file:text-orange-700"
+                        />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                        <input
+                          value={editForm.description}
+                          onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))}
+                          className="w-full border border-gray-300 rounded px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400"
+                        />
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => handleSave(p.id)}
+                      disabled={saving}
+                      className="mt-3 bg-orange-500 hover:bg-orange-600 disabled:opacity-50 text-white text-xs font-medium px-4 py-1.5 rounded transition-colors"
+                    >
+                      {saving ? 'Saving...' : 'Save'}
+                    </button>
+                  </td>
+                </tr>
+              )}
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function AllOrdersTab() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -192,8 +376,8 @@ function AllOrdersTab() {
         </thead>
         <tbody>
           {orders.map(order => (
-            <>
-              <tr key={order.id} className="border-b hover:bg-gray-50">
+            <Fragment key={order.id}>
+              <tr className="border-b hover:bg-gray-50">
                 <td className="py-3 pr-4 font-mono text-gray-600">#{order.id}</td>
                 <td className="py-3 pr-4">
                   <div className="font-medium">{order.customer_name}</div>
@@ -218,7 +402,7 @@ function AllOrdersTab() {
                 </td>
               </tr>
               {expanded === order.id && (
-                <tr key={`${order.id}-items`} className="bg-orange-50">
+                <tr className="bg-orange-50">
                   <td colSpan={6} className="px-4 py-3">
                     <ul className="space-y-1">
                       {order.items.map((item, i) => (
@@ -231,7 +415,7 @@ function AllOrdersTab() {
                   </td>
                 </tr>
               )}
-            </>
+            </Fragment>
           ))}
         </tbody>
       </table>

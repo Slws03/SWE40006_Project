@@ -1,5 +1,6 @@
 import { useCart } from '../../hooks/useCart';
 import { useToast } from '../ui/Toast';
+import ProductImage from '../ui/ProductImage';
 
 export default function CartItem({ item }) {
   const { dispatch } = useCart();
@@ -16,11 +17,11 @@ export default function CartItem({ item }) {
 
   return (
     <div className="flex items-center gap-4 py-4 border-b border-gray-100 last:border-0">
-      <img
-        src={item.image_url}
-        alt={item.name}
+      <ProductImage
+        name={item.name}
+        imageUrl={item.image_url}
         className="w-16 h-16 rounded-xl object-cover bg-gray-100 shrink-0"
-        onError={(e) => { e.target.src = `https://placehold.co/64x64/dcfce7/166534?text=${encodeURIComponent(item.name.charAt(0))}`; }}
+        textSize="text-xs"
       />
       <div className="flex-1 min-w-0">
         <p className="font-semibold text-gray-800 truncate">{item.name}</p>

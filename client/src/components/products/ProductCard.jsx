@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
 import { useToast } from '../ui/Toast';
+import ProductImage from '../ui/ProductImage';
 
 export default function ProductCard({ product }) {
   const { dispatch } = useCart();
@@ -15,11 +16,11 @@ export default function ProductCard({ product }) {
   return (
     <Link to={`/products/${product.id}`} className="group block bg-white rounded-2xl shadow-sm hover:shadow-lg transition-all duration-200 overflow-hidden border border-gray-100 hover:border-green-200 hover:-translate-y-0.5">
       <div className="aspect-square overflow-hidden bg-gray-50">
-        <img
-          src={product.image_url}
-          alt={product.name}
+        <ProductImage
+          name={product.name}
+          imageUrl={product.image_url}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-          onError={(e) => { e.target.src = `https://placehold.co/300x300/dcfce7/166534?text=${encodeURIComponent(product.name)}`; }}
+          textSize="text-sm"
         />
       </div>
       <div className="p-4">

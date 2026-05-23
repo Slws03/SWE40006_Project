@@ -4,6 +4,7 @@ import { ordersApi } from '../api/orders';
 import { useCart } from '../hooks/useCart';
 import { useToast } from '../components/ui/Toast';
 import Spinner from '../components/ui/Spinner';
+import ProductImage from '../components/ui/ProductImage';
 
 export default function CheckoutPage() {
   const { items, totalAmount, dispatch } = useCart();
@@ -105,11 +106,11 @@ export default function CheckoutPage() {
           <div className="space-y-3 max-h-64 overflow-y-auto">
             {items.map(item => (
               <div key={item.productId} className="flex items-center gap-3">
-                <img
-                  src={item.image_url}
-                  alt={item.name}
+                <ProductImage
+                  name={item.name}
+                  imageUrl={item.image_url}
                   className="w-10 h-10 rounded object-cover bg-gray-100"
-                  onError={(e) => { e.target.src = `https://placehold.co/40x40/e5e7eb/6b7280?text=Item`; }}
+                  textSize="text-xs"
                 />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-gray-800 truncate">{item.name}</p>
