@@ -5,6 +5,7 @@ import { ToastProvider } from './components/ui/Toast';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import ProtectedRoute from './components/layout/ProtectedRoute';
+import AdminRoute from './components/layout/AdminRoute';
 
 import HomePage from './pages/HomePage';
 import LoginPage from './pages/LoginPage';
@@ -15,6 +16,7 @@ import CartPage from './pages/CartPage';
 import ProfilePage from './pages/ProfilePage';
 import CheckoutPage from './pages/CheckoutPage';
 import NotFoundPage from './pages/NotFoundPage';
+import AdminPage from './pages/AdminPage';
 
 export default function App() {
   return (
@@ -38,6 +40,10 @@ export default function App() {
                 <Route
                   path="/checkout"
                   element={<ProtectedRoute><CheckoutPage /></ProtectedRoute>}
+                />
+                <Route
+                  path="/admin"
+                  element={<AdminRoute><AdminPage /></AdminRoute>}
                 />
                 <Route path="*" element={<NotFoundPage />} />
               </Routes>

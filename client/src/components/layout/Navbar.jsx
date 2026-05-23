@@ -64,6 +64,11 @@ export default function Navbar() {
 
           {user ? (
             <div className="flex items-center gap-2">
+              {user.role === 'admin' && (
+                <Link to="/admin" className="hidden sm:block text-sm font-medium bg-yellow-400 text-green-900 hover:bg-yellow-300 px-3 py-1.5 rounded-lg transition-colors">
+                  Admin
+                </Link>
+              )}
               <Link to="/profile" className="hidden sm:flex items-center gap-2 text-sm hover:text-yellow-300 transition-colors font-medium">
                 <div className="w-7 h-7 rounded-full bg-yellow-400 text-green-900 flex items-center justify-center font-bold text-xs">
                   {user.name.charAt(0).toUpperCase()}
