@@ -4,6 +4,8 @@ require('dd-trace').init({
   logInjection: true
 });
 
+console.log('Datadog tracing initialized successfully');
+
 const app = require('./app');
 
 const PORT = process.env.PORT || 5000;
