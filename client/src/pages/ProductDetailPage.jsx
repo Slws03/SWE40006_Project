@@ -4,6 +4,7 @@ import { productsApi } from '../api/products';
 import { useCart } from '../hooks/useCart';
 import { useToast } from '../components/ui/Toast';
 import Spinner from '../components/ui/Spinner';
+import ProductImage from '../components/ui/ProductImage';
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -46,11 +47,11 @@ export default function ProductDetailPage() {
 
       <div className="bg-white rounded-2xl shadow-lg overflow-hidden mt-4 grid md:grid-cols-2 gap-0">
         <div className="aspect-square bg-gray-50">
-          <img
-            src={product.image_url}
-            alt={product.name}
+          <ProductImage
+            name={product.name}
+            imageUrl={product.image_url}
             className="w-full h-full object-cover"
-            onError={(e) => { e.target.src = `https://placehold.co/500x500/e5e7eb/6b7280?text=${encodeURIComponent(product.name)}`; }}
+            textSize="text-base"
           />
         </div>
 

@@ -5,6 +5,8 @@ function getSupabase() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
 }
 
+const VALID_CATEGORIES = ['Snacks', 'Stationery', 'Toys', 'Cleaning', 'Beauty', 'Others'];
+
 async function createProduct(req, res, next) {
   try {
     const { name, description, category, stock } = req.body;
@@ -12,6 +14,9 @@ async function createProduct(req, res, next) {
 
     if (!name || !category) {
       return res.status(400).json({ error: 'name and category are required', code: 'MISSING_FIELDS' });
+    }
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category', code: 'INVALID_CATEGORY' });
     }
 
     let image_url = null;
@@ -81,4 +86,58 @@ async function getAllOrders(req, res, next) {
   }
 }
 
-module.exports = { createProduct, getAllOrders };
+async function updateProduct(req, res, next) {
+  try {
+    const { name, description, category, stock } = req.body;
+    if (!name || !category) {
+      return res.status(400).json({ error: 'name and category are required', code: 'MISSING_FIELDS' });
+    }
+    if (!VALID_CATEGORIES.includes(category)) {
+      return res.status(400).json({ error: 'Invalid category', code: 'INVALID_CATEGORY' });
+    }
+
+    let image_url = undefined;
+    if (req.file) {
+      const supabase = getSupabase();
+      const ext = req.file.originalname.split('.').pop();
+      const path = `${Date.now()}.${ext}`;
+      const { error } = await supabase.storage
+        .from('products')
+        .upload(path, req.file.buffer, { contentType: req.file.mimetype });
+      if (error) return next(error);
+      const { data } = supabase.storage.from('products').getPublicUrl(path);
+      image_url = data.publicUrl;
+    }
+
+    const fields = ['name=$1', 'description=$2', 'category=$3', 'stock=$4'];
+    const values = [name.trim(), description?.trim() || null, category.trim(), Number(stock) || 0];
+
+    if (image_url !== undefined) {
+      fields.push(`image_url=$${values.length + 1}`);
+      values.push(image_url);
+    }
+
+    values.push(req.params.id);
+    const { rows } = await pool.query(
+      `UPDATE products SET ${fields.join(', ')} WHERE id = $${values.length} RETURNING *`,
+      values
+    );
+
+    if (rows.length === 0) return res.status(404).json({ error: 'Product not found', code: 'NOT_FOUND' });
+    res.json({ product: { ...rows[0], price: Number(rows[0].price) } });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function deleteProduct(req, res, next) {
+  try {
+    const { rows } = await pool.query('DELETE FROM products WHERE id = $1 RETURNING id', [req.params.id]);
+    if (rows.length === 0) return res.status(404).json({ error: 'Product not found', code: 'NOT_FOUND' });
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+}
+
+module.exports = { createProduct, updateProduct, getAllOrders, deleteProduct };
