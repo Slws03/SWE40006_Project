@@ -8,5 +8,8 @@
     "seed": "cd server && node database/seed.js",
     "test:client": "cd client && npx vitest run",
     "test:server": "cd server && npx vitest run"
+  },
+  "dependencies": {
+    "dd-trace": "^5.104.0"
   }
 }
