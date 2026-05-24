@@ -5,6 +5,9 @@ require('dd-trace').init({
 });
 
 console.log('Datadog tracing initialized successfully');
+
+const app = require('./app');
+
 const logger = require('./utils/logger');
 
 // Log every incoming request
@@ -22,7 +25,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// Log errors in your error handler
+// Log errors in error handler
 app.use((err, req, res, next) => {
   logger.error(err.message, {
     stack: err.stack,
@@ -32,14 +35,8 @@ app.use((err, req, res, next) => {
   res.status(500).json({ error: 'Internal Server Error' });
 });
 
-// Log on startup
-app.listen(PORT, () => {
-  logger.info(`Server started on port ${PORT}`);
-});
-
-const app = require('./app');
-
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Dollar Shop API running on http://localhost:${PORT}`);
+  logger.info(`Server started on port ${PORT}`);
 });

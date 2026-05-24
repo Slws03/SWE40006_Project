@@ -18,6 +18,7 @@ const logger = winston.createLogger({
       service: 'dollarstore-api',
       ddsource: 'nodejs',
       ddtags: `env:${process.env.NODE_ENV || 'production'}`,
+      site: 'us5.datadoghq.com',
     }),
   ],
 });
