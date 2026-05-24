@@ -1,4 +1,8 @@
-require('dd-trace').init();
+require('dd-trace').init({
+  service: 'swe40006-backend',
+  env: 'production',
+  logInjection: true
+});
 
 const app = require('./app');
 
