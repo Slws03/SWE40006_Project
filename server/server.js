@@ -5,6 +5,37 @@ require('dd-trace').init({
 });
 
 console.log('Datadog tracing initialized successfully');
+const logger = require('./utils/logger');
+
+// Log every incoming request
+app.use((req, res, next) => {
+  res.on('finish', () => {
+    const level = res.statusCode >= 400 ? 'error' : 'info';
+    logger.log(level, `${req.method} ${req.url}`, {
+      method: req.method,
+      url: req.url,
+      statusCode: res.statusCode,
+      responseTime: Date.now() - req._startTime,
+    });
+  });
+  req._startTime = Date.now();
+  next();
+});
+
+// Log errors in your error handler
+app.use((err, req, res, next) => {
+  logger.error(err.message, {
+    stack: err.stack,
+    method: req.method,
+    url: req.url,
+  });
+  res.status(500).json({ error: 'Internal Server Error' });
+});
+
+// Log on startup
+app.listen(PORT, () => {
+  logger.info(`Server started on port ${PORT}`);
+});
 
 const app = require('./app');
 
