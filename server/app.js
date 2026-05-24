@@ -1,4 +1,5 @@
 require('dotenv').config();
+const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
@@ -23,6 +24,12 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+
+// Serve the frontend build
+app.use(express.static(path.join(__dirname, '../client/dist')));
+app.get(/.*/, (req, res) => {
+  res.sendFile(path.join(__dirname, '../client/dist/index.html'));
+});
 
 app.use(errorHandler);
 
