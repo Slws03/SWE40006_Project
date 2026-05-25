@@ -26,7 +26,7 @@ export default function Navbar() {
     <nav className="bg-green-700 text-white shadow-lg sticky top-0 z-40">
       <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-4">
         <Link to="/" className="text-xl font-extrabold tracking-tight hover:text-yellow-300 transition-colors shrink-0">
-          💰 Dollar Shop
+          💰 BROKEN - DO NOT USE
         </Link>
 
         <form onSubmit={handleSearch} className="flex-1 max-w-md mx-auto">
