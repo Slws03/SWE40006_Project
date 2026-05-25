@@ -1,0 +1,75 @@
+name: Rollback
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: 'Commit SHA to roll back to (leave empty for previous commit)'
+        required: false
+
+jobs:
+  rollback:
+    name: Create Rollback PR
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Configure git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Determine target SHA
+        id: target
+        run: |
+          if [ -z "${{ github.event.inputs.commit_sha }}" ]; then
+            TARGET=$(git log --skip=1 -1 --format='%H')
+            echo "No SHA provided, rolling back to previous commit: $TARGET"
+          else
+            TARGET="${{ github.event.inputs.commit_sha }}"
+            echo "Rolling back to specified commit: $TARGET"
+          fi
+          echo "sha=$TARGET" >> $GITHUB_OUTPUT
+
+      - name: Create rollback branch
+        run: git checkout -b rollback/${{ steps.target.outputs.sha }}
+
+      - name: Revert commits
+        run: |
+          git revert --no-commit -m 1 -X ours ${{ steps.target.outputs.sha }}..HEAD
+
+          # Force restore package files to avoid lock file conflicts
+          git checkout ${{ steps.target.outputs.sha }} -- server/package.json
+          git checkout ${{ steps.target.outputs.sha }} -- server/package-lock.json
+          git checkout ${{ steps.target.outputs.sha }} -- client/package.json
+          git checkout ${{ steps.target.outputs.sha }} -- client/package-lock.json
+
+          if git diff --cached --quiet; then
+            echo "Nothing to revert — target SHA is already the current state"
+            exit 1
+          fi
+          git commit -m "revert: rollback to ${{ steps.target.outputs.sha }} by ${{ github.actor }}"
+
+      - name: Push rollback branch
+        run: git push origin rollback/${{ steps.target.outputs.sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Pull Request
+        run: |
+          gh pr create \
+            --title "revert: rollback to ${{ steps.target.outputs.sha }}" \
+            --body "## Automated Rollback
+            
+            Initiated by: ${{ github.actor }}
+            Target commit: ${{ steps.target.outputs.sha }}
+            
+            This PR reverts all commits after the target SHA.
+            Merging this PR will trigger the full CI/CD pipeline across all environments (dev → staging → prod)." \
+            --base main \
+            --head rollback/${{ steps.target.outputs.sha }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
