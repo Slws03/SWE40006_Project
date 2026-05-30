@@ -1,15 +1,19 @@
 import { Link } from 'react-router-dom';
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ui/Toast';
+import { cartApi } from '../../api/cart';
 import ProductImage from '../ui/ProductImage';
 
 export default function ProductCard({ product }) {
   const { dispatch } = useCart();
+  const { token } = useAuth();
   const addToast = useToast();
 
   function handleAddToCart(e) {
     e.preventDefault();
     dispatch({ type: 'ADD_ITEM', product, quantity: 1 });
+    if (token) cartApi.add(product.id, 1).catch(() => {});
     addToast(`${product.name} added to cart!`);
   }
 
