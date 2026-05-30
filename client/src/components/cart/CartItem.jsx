@@ -1,17 +1,26 @@
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../ui/Toast';
+import { cartApi } from '../../api/cart';
 import ProductImage from '../ui/ProductImage';
 
 export default function CartItem({ item }) {
   const { dispatch } = useCart();
+  const { token } = useAuth();
   const addToast = useToast();
 
   function changeQty(delta) {
-    dispatch({ type: 'UPDATE_QTY', productId: item.productId, quantity: item.quantity + delta });
+    const newQty = item.quantity + delta;
+    dispatch({ type: 'UPDATE_QTY', productId: item.productId, quantity: newQty });
+    if (token) {
+      if (newQty <= 0) cartApi.remove(item.productId).catch(() => {});
+      else cartApi.update(item.productId, newQty).catch(() => {});
+    }
   }
 
   function remove() {
     dispatch({ type: 'REMOVE_ITEM', productId: item.productId });
+    if (token) cartApi.remove(item.productId).catch(() => {});
     addToast(`${item.name} removed from cart`, 'warning');
   }
 

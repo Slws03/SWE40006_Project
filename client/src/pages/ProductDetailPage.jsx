@@ -2,7 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { productsApi } from '../api/products';
 import { useCart } from '../hooks/useCart';
+import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../components/ui/Toast';
+import { cartApi } from '../api/cart';
 import Spinner from '../components/ui/Spinner';
 import ProductImage from '../components/ui/ProductImage';
 
@@ -12,6 +14,7 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const { dispatch } = useCart();
+  const { token } = useAuth();
   const addToast = useToast();
 
   useEffect(() => {
@@ -24,6 +27,7 @@ export default function ProductDetailPage() {
 
   function handleAddToCart() {
     dispatch({ type: 'ADD_ITEM', product, quantity });
+    if (token) cartApi.add(product.id, quantity).catch(() => {});
     addToast(`${product.name} × ${quantity} added to cart!`);
   }
 
